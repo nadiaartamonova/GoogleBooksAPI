@@ -1,6 +1,8 @@
 package com.example.googlebooks.viewModel.search
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,13 +10,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,22 +41,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.googlebooks.domain.model.BookUiModel
-import androidx.compose.material3.ExperimentalMaterial3Api
 
-import androidx.compose.foundation.shape.RoundedCornerShape
+
+
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.material3.AssistChip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 
 
@@ -61,7 +75,9 @@ fun BooksScreen(
     val error by viewModel.error.collectAsState()
     val recentQueries by viewModel.recentQueries.collectAsState()
 
+
     var isSearchOpen by remember { mutableStateOf(false) }
+    var selectedBook by remember { mutableStateOf<BookUiModel?>(null) }
 
     Column(
         modifier = Modifier
@@ -171,14 +187,91 @@ fun BooksScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(books) { book ->
-                BookItem(book)
+                BookItem(
+                    book = book,
+                    onDetailsClick = { selectedBook = book }
+                )
             }
+        }
+
+        selectedBook?.let { book ->
+            AlertDialog(
+                onDismissRequest = { selectedBook = null },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = book.title.ifBlank { "No title" },
+                            color = Color(0xFFFF4500),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { selectedBook = null }) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "Close details",
+                                tint = Color(0xFFFF4500)
+                            )
+                        }
+                    }
+                },
+                text = {
+
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (book.thumbnailUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = book.thumbnailUrl,
+                                    contentDescription = book.title,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(180.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+
+                        DetailLine(label = "Author(s)", value = book.authors.ifBlank { "Unknown" })
+                        DetailLine(label = "Published", value = book.publishedDate.ifBlank { "-" })
+                        DetailLine(label = "Publisher", value = book.publisher.ifBlank { "Unknown" })
+                        DetailLine(
+                            label = "Pages",
+                            value = if (book.pageCount > 0) book.pageCount.toString() else "Unknown"
+                        )
+                        Text(
+                            text = if (book.description.isNotBlank()) book.description else "No description",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                },
+                confirmButton = {}
+            )
         }
     }
 }
 
 @Composable
-private fun BookItem(book: BookUiModel) {
+private fun DetailLine(label: String, value: String) {
+    Text(
+        text = buildAnnotatedString {
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                append("$label: ")
+            }
+            append(value)
+        },
+        style = MaterialTheme.typography.bodyMedium
+    )
+}
+
+@Composable
+private fun BookItem(
+    book: BookUiModel,
+    onDetailsClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -208,7 +301,7 @@ private fun BookItem(book: BookUiModel) {
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // Placeholder если нет картинки
+
                     Box(
                         modifier = Modifier
                             .height(140.dp)
@@ -241,9 +334,8 @@ private fun BookItem(book: BookUiModel) {
             }
 
             Button(
-                onClick = {
-                    // TODO
-                },
+
+                onClick = onDetailsClick,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFFF4500),
                     contentColor = Color.White

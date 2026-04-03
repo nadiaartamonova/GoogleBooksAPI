@@ -82,17 +82,6 @@ app/src/main/java/com/example/googlebooks/
 
 ## Screenshots
 
-Place your 3 screenshots in the repository, for example:
-
-`docs/screenshots/main_screen.png`  
-`docs/screenshots/search_results.png`  
-`docs/screenshots/book_details.png`
-
-Then add them like this:
-
-```md
-## Screenshots
-
 ### Main Screen
 ![Main Screen](screen/1.png)
 
@@ -103,9 +92,6 @@ Then add them like this:
 
 ### Book Details
 ![Book Details](screen/4.png)
-```
-
-If your files already exist in another folder, just replace the paths in markdown.
 
 ## Notes
 

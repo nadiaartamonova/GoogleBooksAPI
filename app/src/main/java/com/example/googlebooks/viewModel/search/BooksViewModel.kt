@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.googlebooks.data.local.AppDatabase
+import com.example.googlebooks.data.local.SearchHistoryStorage
 import com.example.googlebooks.data.remote.RetrofitInstance
 import com.example.googlebooks.data.repository.BooksRepository
 import com.example.googlebooks.domain.model.BookUiModel
@@ -18,9 +19,13 @@ class BooksViewModel(application: Application) : AndroidViewModel(application) {
         api = RetrofitInstance.api,
         dao = AppDatabase.getInstance(application).bookDao()
     )
+    private val searchHistoryStorage = SearchHistoryStorage(application)
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _recentQueries = MutableStateFlow(searchHistoryStorage.getRecentQueries())
+    val recentQueries: StateFlow<List<String>> = _recentQueries.asStateFlow()
 
     private val _books = MutableStateFlow<List<BookUiModel>>(emptyList())
     val books: StateFlow<List<BookUiModel>> = _books.asStateFlow()
@@ -35,6 +40,10 @@ class BooksViewModel(application: Application) : AndroidViewModel(application) {
         _query.value = value
     }
 
+    fun onRecentQueryClick(value: String) {
+        _query.value = value
+        searchBooks()
+    }
     fun searchBooks() {
         val q = _query.value.trim()
         if (q.isBlank()) return
@@ -47,7 +56,9 @@ class BooksViewModel(application: Application) : AndroidViewModel(application) {
                 repository.searchBooks(q)
             }.onSuccess { result ->
                 _books.value = result
+                _recentQueries.value = searchHistoryStorage.addQuery(q)
             }.onFailure { throwable ->
+                _books.value = emptyList()
                 _error.value = throwable.message ?: "Unknown error"
                 //_error.value = throwable.stackTraceToString()
             }

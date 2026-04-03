@@ -45,7 +45,10 @@ import androidx.compose.material3.CardDefaults
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.material3.AssistChip
 import androidx.compose.ui.draw.clip
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +59,7 @@ fun BooksScreen(
     val books by viewModel.books.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val recentQueries by viewModel.recentQueries.collectAsState()
 
     var isSearchOpen by remember { mutableStateOf(false) }
 
@@ -121,7 +125,26 @@ fun BooksScreen(
                 }
             }
         }
-
+        if (recentQueries.isNotEmpty()) {
+            Text(
+                text = "Recent searches",
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.labelLarge
+            )
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(recentQueries) { recentQuery ->
+                    AssistChip(
+                        onClick = { viewModel.onRecentQueryClick(recentQuery) },
+                        label = { Text(recentQuery) }
+                    )
+                }
+            }
+        }
         if (isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(horizontal = 16.dp))
             Spacer(modifier = Modifier.height(12.dp))

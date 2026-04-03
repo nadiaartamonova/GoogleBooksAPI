@@ -1,7 +1,9 @@
 package com.example.googlebooks.viewModel.search
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.googlebooks.data.local.AppDatabase
 import com.example.googlebooks.data.remote.RetrofitInstance
 import com.example.googlebooks.data.repository.BooksRepository
 import com.example.googlebooks.domain.model.BookUiModel
@@ -10,9 +12,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class BooksViewModel : ViewModel() {
+class BooksViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = BooksRepository(RetrofitInstance.api)
+    private val repository = BooksRepository(
+        api = RetrofitInstance.api,
+        dao = AppDatabase.getInstance(application).bookDao()
+    )
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -44,6 +49,7 @@ class BooksViewModel : ViewModel() {
                 _books.value = result
             }.onFailure { throwable ->
                 _error.value = throwable.message ?: "Unknown error"
+                //_error.value = throwable.stackTraceToString()
             }
 
             _isLoading.value = false
